@@ -4,80 +4,14 @@
 <meta charset="UTF-8" />
 <title>The Textarea</title>
 <meta name="description" content="Just one big textarea — perfect for quick notes.">
-<style>
-  html, body {
-    margin: 0;
-    padding: 0;
-    height: 100%;
-    overflow: hidden;
-  }
-  main {
-    height: 100%;
-  }
-  textarea {
-    width: 100vw;
-    height: 100dvh;
-    box-sizing: border-box;
-    border: none;
-    resize: none;
-    font-size: 16px;
-    font-family: sans-serif;
-  }
-  textarea:focus {
-    outline: 3px solid #005fcc;
-    outline-offset: 0;
-  }
-  .visually-hidden {
-    position: absolute !important;
-    width: 1px; height: 1px;
-    padding: 0; margin: -1px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-    border: 0;
-  }
-</style>
+<link rel="stylesheet" href="styles.css">
 </head>
-<body>
-  <main>
-    <label for="main-textarea" class="visually-hidden">Text input area</label>
-    <textarea autofocus id="main-textarea" aria-label="Text input area"></textarea>
+<body class="textarea-app">
+  <main class="textarea-app__container">
+    <label for="main-textarea" class="textarea-app__label textarea-app__label--visually-hidden">Text input area</label>
+    <textarea autofocus id="main-textarea" class="textarea-app__input" aria-label="Text input area"></textarea>
   </main>
 
-  <script>
-    const QUERY_PARAM_KEY = 'text';
-
-    const getCurrentQueryParam = (key) => {
-      const urlParams = new URLSearchParams(window.location.search);
-      return urlParams.get(key);
-    };
-
-    const createUpdatedUrl = (currentUrl, key, text) => {
-      const url = new URL(currentUrl);
-      if (text) {
-        url.searchParams.set(key, text);
-      } else {
-        url.searchParams.delete(key);
-      }
-      return url.toString();
-    };
-
-    const replaceUrl = (newUrl) => {
-      window.history.replaceState(null, '', newUrl);
-    };
-
-    const textarea = document.getElementById('main-textarea');
-
-    const initialText = getCurrentQueryParam(QUERY_PARAM_KEY);
-    if (initialText !== null) {
-      textarea.value = decodeURIComponent(initialText);
-    }
-
-    const onTextareaInput = () => {
-      const newUrl = createUpdatedUrl(window.location.href, QUERY_PARAM_KEY, textarea.value);
-      replaceUrl(newUrl);
-    };
-
-    textarea.addEventListener('input', onTextareaInput);
-  </script>
+  <script src="script.js"></script>
 </body>
 </html>
