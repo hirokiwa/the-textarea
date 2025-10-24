@@ -1,4 +1,4 @@
-const QUERY_PARAM_KEY = 'text';
+const QUERY_PARAM_KEY = 't';
 
 const getCurrentQueryParam = (key) => {
   const urlParams = new URLSearchParams(window.location.search);
