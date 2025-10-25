@@ -26,12 +26,22 @@
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-link"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.72"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.72-1.72"></path></svg>
       <span>Copy URL</span>
     </button>
+    <button id="generate-qr-button" class="control-bar__button" aria-label="Generate QR Code">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-qr"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect><line x1="14" y1="14" x2="14.01" y2="14"></line><line x1="21" y1="14" x2="21.01" y2="14"></line><line x1="14" y1="21" x2="14.01" y2="21"></line><line x1="21" y1="21" x2="21.01" y2="21"></line></svg>
+      <span>QR Code</span>
+    </button>
   </header>
   <main class="textarea-app__container">
     <label for="main-textarea" class="textarea-app__label textarea-app__label--visually-hidden">Text input area</label>
     <textarea autofocus id="main-textarea" class="textarea-app__input" aria-label="Text input area"></textarea>
   </main>
 
+  <div id="qr-code-container" class="qr-code-container" style="display: none;">
+    <button id="close-qr-button" class="qr-code-container__close-button" aria-label="Close QR Code">&times;</button>
+    <div id="qr-code-image"></div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
