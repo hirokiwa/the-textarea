@@ -1,4 +1,5 @@
 const QUERY_PARAM_KEY = 't';
+const QR_CODE_URL_LIMIT = 2000; // 2KB limit as a safe guard
 
 const getCurrentQueryParam = (key) => {
   const urlParams = new URLSearchParams(window.location.search);
@@ -165,6 +166,17 @@ const updateSaveButtonState = () => {
   saveFileButton.disabled = textarea.value.length === 0;
 };
 
+const updateQrCodeButtonState = () => {
+  const url = createUpdatedUrl(window.location.href, QUERY_PARAM_KEY, textarea.value);
+  const byteLength = new Blob([url]).size;
+  generateQrButton.disabled = byteLength > QR_CODE_URL_LIMIT;
+};
+
+const onTextareaInput = () => {
+  updateSaveButtonState();
+  updateQrCodeButtonState();
+};
+
 // --- Initializations ---
 
 copyButton.addEventListener('click', onCopyButtonClick);
@@ -172,7 +184,7 @@ copyUrlButton.addEventListener('click', onCopyUrlButtonClick);
 generateQrButton.addEventListener('click', onGenerateQrButtonClick);
 saveFileButton.addEventListener('click', onSaveFileButtonClick);
 closeQrButton.addEventListener('click', onCloseQrButtonClick);
-textarea.addEventListener('input', updateSaveButtonState);
+textarea.addEventListener('input', onTextareaInput);
 
 qrCodeContainer.addEventListener('dragstart', (e) => e.preventDefault());
 
@@ -184,4 +196,5 @@ window.addEventListener('beforeunload', (e) => {
 });
 
 makeDraggable(qrCodeContainer);
-updateSaveButtonState(); // Initial check
+
+onTextareaInput(); // Initial check for all button states
