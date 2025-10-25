@@ -100,10 +100,20 @@ const triggerDownload = (blob, filename) => {
   URL.revokeObjectURL(url);
 };
 
+const generateQrCode = (size) => {
+  const url = createUpdatedUrl(window.location.href, QUERY_PARAM_KEY, textarea.value);
+  qrCodeImageContainer.innerHTML = '';
+  new QRCode(qrCodeImageContainer, {
+    text: url,
+    width: size,
+    height: size,
+  });
+};
+
 // --- Event Handlers ---
 
-const showSuccessFeedback = (button, originalContent) => {
-  button.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-check"><polyline points="20 6 9 17 4 12"></polyline></svg> <span>Copied!</span>';
+const showTemporaryFeedback = (button, originalContent, feedbackHtml) => {
+  button.innerHTML = feedbackHtml;
   button.disabled = true;
 
   setTimeout(() => {
@@ -114,8 +124,9 @@ const showSuccessFeedback = (button, originalContent) => {
 
 const onCopyButtonClick = () => {
   const originalContent = copyButton.innerHTML;
+  const feedbackHtml = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-check"><polyline points="20 6 9 17 4 12"></polyline></svg> <span>Copied!</span>';
   navigator.clipboard.writeText(textarea.value)
-    .then(() => showSuccessFeedback(copyButton, originalContent))
+    .then(() => showTemporaryFeedback(copyButton, originalContent, feedbackHtml))
     .catch(err => {
       console.error('Failed to copy text: ', err);
     });
@@ -124,25 +135,17 @@ const onCopyButtonClick = () => {
 const onCopyUrlButtonClick = () => {
   const originalContent = copyUrlButton.innerHTML;
   const urlToCopy = createUpdatedUrl(window.location.href, QUERY_PARAM_KEY, textarea.value);
+  const feedbackHtml = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-check"><polyline points="20 6 9 17 4 12"></polyline></svg> <span>Copied!</span>';
 
   navigator.clipboard.writeText(urlToCopy)
-    .then(() => showSuccessFeedback(copyUrlButton, originalContent))
+    .then(() => showTemporaryFeedback(copyUrlButton, originalContent, feedbackHtml))
     .catch(err => {
       console.error('Failed to copy URL: ', err);
     });
 };
 
 const onGenerateQrButtonClick = () => {
-  const url = createUpdatedUrl(window.location.href, QUERY_PARAM_KEY, textarea.value);
-  
-  qrCodeImageContainer.innerHTML = '';
-
-  new QRCode(qrCodeImageContainer, {
-    text: url,
-    width: 256,
-    height: 256,
-  });
-
+  generateQrCode(256);
   qrCodeContainer.style.display = 'block';
 };
 
