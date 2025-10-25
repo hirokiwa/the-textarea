@@ -51,6 +51,33 @@ html {
   background-color: #d0d0d0;
 }
 
+.control-bar__button:disabled {
+  cursor: not-allowed;
+}
+
+.control-bar__button:disabled:hover,
+.control-bar__button:disabled:focus-visible {
+  background-color: transparent;
+}
+
+.control-bar__button:disabled:hover span,
+.control-bar__button:disabled:focus-visible span {
+  text-decoration: none;
+}
+
+.control-bar__button:disabled:hover svg,
+.control-bar__button:disabled:focus-visible svg {
+  stroke-width: 2;
+}
+
+.control-bar__button:disabled svg {
+  stroke: #aaa;
+}
+
+.control-bar__button:disabled span {
+  color: #aaa;
+}
+
 .control-bar__button span {
   font-size: 0.75rem;
   line-height: 1;

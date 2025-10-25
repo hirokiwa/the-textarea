@@ -161,6 +161,10 @@ const onCloseQrButtonClick = () => {
   qrCodeContainer.style.display = 'none';
 };
 
+const updateSaveButtonState = () => {
+  saveFileButton.disabled = textarea.value.length === 0;
+};
+
 // --- Initializations ---
 
 copyButton.addEventListener('click', onCopyButtonClick);
@@ -168,6 +172,7 @@ copyUrlButton.addEventListener('click', onCopyUrlButtonClick);
 generateQrButton.addEventListener('click', onGenerateQrButtonClick);
 saveFileButton.addEventListener('click', onSaveFileButtonClick);
 closeQrButton.addEventListener('click', onCloseQrButtonClick);
+textarea.addEventListener('input', updateSaveButtonState);
 
 qrCodeContainer.addEventListener('dragstart', (e) => e.preventDefault());
 
@@ -179,3 +184,4 @@ window.addEventListener('beforeunload', (e) => {
 });
 
 makeDraggable(qrCodeContainer);
+updateSaveButtonState(); // Initial check
