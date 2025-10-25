@@ -1,0 +1,19 @@
+# === AI Provider Instruction Docs ===
+
+# Provider-specific instruction files
+GEMINI.*
+OPENAI.*
+CLAUDE.*
+LLAMA.*
+MISTRAL.*
+GPT-AGENT.*
+DEEPSEEK.*
+
+# Common variations
+*gemini*.md
+*openai*.md
+*claude*.md
+*gpt*.md
+*llm*.md
+*ai-agent*.md
+*ai-config*.md
