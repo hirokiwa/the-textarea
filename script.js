@@ -132,4 +132,11 @@ closeQrButton.addEventListener('click', onCloseQrButtonClick);
 
 qrCodeContainer.addEventListener('dragstart', (e) => e.preventDefault());
 
+window.addEventListener('beforeunload', (e) => {
+  if (textarea.value) {
+    e.preventDefault();
+    e.returnValue = '';
+  }
+});
+
 makeDraggable(qrCodeContainer);
