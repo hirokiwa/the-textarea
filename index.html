@@ -17,6 +17,16 @@
   </script>
 </head>
 <body class="textarea-app">
+  <header class="control-bar">
+    <button id="copy-button" class="control-bar__button" aria-label="Copy Text to clipboard">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-copy"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+      <span>Copy Text</span>
+    </button>
+    <button id="copy-url-button" class="control-bar__button" aria-label="Copy URL with text">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-link"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.72"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.72-1.72"></path></svg>
+      <span>Copy URL</span>
+    </button>
+  </header>
   <main class="textarea-app__container">
     <label for="main-textarea" class="textarea-app__label textarea-app__label--visually-hidden">Text input area</label>
     <textarea autofocus id="main-textarea" class="textarea-app__input" aria-label="Text input area"></textarea>
