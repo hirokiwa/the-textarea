@@ -24,11 +24,6 @@ const textarea = document.getElementById('main-textarea');
 const initialText = getCurrentQueryParam(QUERY_PARAM_KEY);
 if (initialText !== null) {
   textarea.value = decodeURIComponent(initialText);
-}
-
-const onTextareaInput = () => {
-  const newUrl = createUpdatedUrl(window.location.href, QUERY_PARAM_KEY, textarea.value);
+  const newUrl = createUpdatedUrl(window.location.href, QUERY_PARAM_KEY, null);
   replaceUrl(newUrl);
-};
-
-textarea.addEventListener('input', onTextareaInput);
+}
