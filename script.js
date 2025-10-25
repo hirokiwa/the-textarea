@@ -24,6 +24,7 @@ const textarea = document.getElementById('main-textarea');
 const copyButton = document.getElementById('copy-button');
 const copyUrlButton = document.getElementById('copy-url-button');
 const generateQrButton = document.getElementById('generate-qr-button');
+const saveFileButton = document.getElementById('save-file-button');
 const qrCodeContainer = document.getElementById('qr-code-container');
 const qrCodeImageContainer = document.getElementById('qr-code-image');
 const closeQrButton = document.getElementById('close-qr-button');
@@ -73,6 +74,32 @@ const makeDraggable = (element) => {
   document.addEventListener('mousemove', drag);
 };
 
+const createTimestamp = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  const seconds = String(now.getSeconds()).padStart(2, '0');
+  return `${year}${month}${day}_${hours}${minutes}${seconds}`;
+};
+
+const createFilename = (prefix, timestamp, extension) => {
+  return `${prefix}_${timestamp}.${extension}`;
+};
+
+const triggerDownload = (blob, filename) => {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+};
+
 // --- Event Handlers ---
 
 const showSuccessFeedback = (button, originalContent) => {
@@ -119,6 +146,14 @@ const onGenerateQrButtonClick = () => {
   qrCodeContainer.style.display = 'block';
 };
 
+const onSaveFileButtonClick = () => {
+  const text = textarea.value;
+  const timestamp = createTimestamp();
+  const filename = createFilename('note', timestamp, 'txt');
+  const blob = new Blob([text], { type: 'text/plain' });
+  triggerDownload(blob, filename);
+};
+
 const onCloseQrButtonClick = () => {
   qrCodeContainer.style.display = 'none';
 };
@@ -128,6 +163,7 @@ const onCloseQrButtonClick = () => {
 copyButton.addEventListener('click', onCopyButtonClick);
 copyUrlButton.addEventListener('click', onCopyUrlButtonClick);
 generateQrButton.addEventListener('click', onGenerateQrButtonClick);
+saveFileButton.addEventListener('click', onSaveFileButtonClick);
 closeQrButton.addEventListener('click', onCloseQrButtonClick);
 
 qrCodeContainer.addEventListener('dragstart', (e) => e.preventDefault());
