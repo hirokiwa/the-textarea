@@ -1,5 +1,6 @@
 const QUERY_PARAM_KEY = 't';
-const QR_CODE_URL_LIMIT = 2000; // 2KB limit as a safe guard
+const MAX_TEXT_LENGTH_FOR_COPY_URL_BUTTON = 2000;
+const MAX_TEXT_LENGTH_FOR_QR_CODE_BUTTON = 2000;
 const COPY_BANNER_DISPLAY_DURATION = 5000;
 const COPY_FEEDBACK_DURATIONS = Object.freeze({
   default: 2000,
@@ -253,19 +254,38 @@ const onCloseQrButtonClick = () => {
   qrCodeContainer.style.display = 'none';
 };
 
-const updateSaveButtonState = () => {
-  saveFileButton.disabled = textarea.value.length === 0;
+const setButtonDisabledState = (button, shouldDisable) => {
+  if (!button) {
+    return;
+  }
+  button.disabled = shouldDisable;
 };
 
-const updateQrCodeButtonState = () => {
-  const url = createUpdatedUrl(window.location.href, QUERY_PARAM_KEY, textarea.value);
-  const byteLength = new Blob([url]).size;
-  generateQrButton.disabled = byteLength > QR_CODE_URL_LIMIT;
-};
+const updateHeaderButtonState = Object.freeze({
+  copyText: (inputTextLength) => {
+    const isLengthValid = inputTextLength > 0;
+    setButtonDisabledState(copyButton, !isLengthValid);
+  },
+  copyUrl: (inputTextLength) => {
+    const isLengthValid = inputTextLength > 0 && inputTextLength <= MAX_TEXT_LENGTH_FOR_COPY_URL_BUTTON;
+    setButtonDisabledState(copyUrlButton, !isLengthValid);
+  },
+  saveFile: (inputTextLength) => {
+    const isLengthValid = inputTextLength > 0;
+    setButtonDisabledState(saveFileButton, !isLengthValid);
+  },
+  qrCode: (inputTextLength) => {
+    const isLengthValid = inputTextLength > 0 && inputTextLength <= MAX_TEXT_LENGTH_FOR_QR_CODE_BUTTON;
+    setButtonDisabledState(generateQrButton, !isLengthValid);
+  },
+});
 
 const onTextareaInput = () => {
-  updateSaveButtonState();
-  updateQrCodeButtonState();
+  const inputTextLength = textarea.value.length;
+  updateHeaderButtonState.copyText(inputTextLength);
+  updateHeaderButtonState.copyUrl(inputTextLength);
+  updateHeaderButtonState.saveFile(inputTextLength);
+  updateHeaderButtonState.qrCode(inputTextLength);
 };
 
 // --- Initializations ---
