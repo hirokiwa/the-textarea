@@ -41,6 +41,13 @@
     <textarea autofocus id="main-textarea" class="textarea-app__input" aria-label="Text input area"></textarea>
   </main>
 
+  <div id="copy-banner" class="copy-banner" aria-hidden="true">
+    <button id="copy-banner-button" class="copy-banner__button" aria-label="Copy Text">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="copy-banner__icon"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+      <span class="copy-banner__label">Copy Text</span>
+    </button>
+  </div>
+
   <div id="qr-code-container" class="qr-code-container" style="display: none;">
     <button id="close-qr-button" class="qr-code-container__close-button" aria-label="Close QR Code">&times;</button>
     <div id="qr-code-image"></div>

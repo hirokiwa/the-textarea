@@ -160,6 +160,52 @@ body {
   opacity: 1;
 }
 
+.copy-banner {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translate(-50%, calc(100% + 32px));
+  transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.copy-banner--visible {
+  transform: translate(-50%, 0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.copy-banner__button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 999px;
+  background-color: #222;
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+  transition: background-color 0.2s ease-out, transform 0.2s ease-out;
+}
+
+.copy-banner__button:hover,
+.copy-banner__button:focus-visible {
+  background-color: #005fcc;
+  transform: translateY(-2px) scale(1.03);
+}
+
+.copy-banner__icon {
+  stroke: currentColor;
+}
+
+.copy-banner__label {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
 @media (max-width: 640px) {
   .control-bar {
     flex-direction: row;
@@ -167,5 +213,14 @@ body {
 
   .textarea-app__input {
     padding: 100px 24px 24px 24px;
+  }
+
+  .copy-banner {
+    width: calc(100% - 32px);
+  }
+
+  .copy-banner__button {
+    width: 100%;
+    justify-content: center;
   }
 }

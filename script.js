@@ -1,5 +1,11 @@
 const QUERY_PARAM_KEY = 't';
 const QR_CODE_URL_LIMIT = 2000; // 2KB limit as a safe guard
+const COPY_BANNER_DISPLAY_DURATION = 5000;
+const COPY_FEEDBACK_DURATIONS = Object.freeze({
+  default: 2000,
+  banner: 3000,
+});
+const COPY_SUCCESS_FEEDBACK_HTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-check"><polyline points="20 6 9 17 4 12"></polyline></svg> <span>Copied!</span>';
 
 const getCurrentQueryParam = (key) => {
   const urlParams = new URLSearchParams(window.location.search);
@@ -29,6 +35,9 @@ const saveFileButton = document.getElementById('save-file-button');
 const qrCodeContainer = document.getElementById('qr-code-container');
 const qrCodeImageContainer = document.getElementById('qr-code-image');
 const closeQrButton = document.getElementById('close-qr-button');
+const copyBanner = document.getElementById('copy-banner');
+const copyBannerButton = document.getElementById('copy-banner-button');
+let copyBannerTimeoutId = null;
 
 // Initial load from URL parameter
 const initialText = getCurrentQueryParam(QUERY_PARAM_KEY);
@@ -37,6 +46,7 @@ if (initialText !== null) {
   const newUrl = createUpdatedUrl(window.location.href, QUERY_PARAM_KEY, null);
   replaceUrl(newUrl);
 }
+const shouldShowCopyBanner = initialText !== null;
 
 // --- Logic --- 
 
@@ -111,38 +121,119 @@ const generateQrCode = (size) => {
   });
 };
 
+const handleCopyError = (error) => {
+  console.error('Failed to copy text: ', error);
+};
+
+const copyTextToClipboard = (text) => {
+  return navigator.clipboard.writeText(text);
+};
+
+const clearCopyBannerTimeout = () => {
+  if (!copyBannerTimeoutId) {
+    return;
+  }
+  window.clearTimeout(copyBannerTimeoutId);
+  copyBannerTimeoutId = null;
+};
+
+const hideCopyBanner = () => {
+  if (!copyBanner) {
+    return;
+  }
+  copyBanner.classList.remove('copy-banner--visible');
+  copyBanner.setAttribute('aria-hidden', 'true');
+  clearCopyBannerTimeout();
+};
+
+const showCopyBanner = () => {
+  if (!copyBanner) {
+    return;
+  }
+  copyBanner.classList.add('copy-banner--visible');
+  copyBanner.setAttribute('aria-hidden', 'false');
+  clearCopyBannerTimeout();
+  copyBannerTimeoutId = window.setTimeout(() => {
+    hideCopyBanner();
+  }, COPY_BANNER_DISPLAY_DURATION);
+};
+
+const initializeCopyBanner = () => {
+  if (!copyBanner || !copyBannerButton || !shouldShowCopyBanner) {
+    return;
+  }
+  requestAnimationFrame(showCopyBanner);
+};
+
 // --- Event Handlers ---
 
-const showTemporaryFeedback = (button, originalContent, feedbackHtml) => {
+const showTemporaryFeedback = (
+  button,
+  originalContent,
+  feedbackHtml,
+  onComplete = () => {},
+  duration = COPY_FEEDBACK_DURATIONS.default,
+) => {
   button.innerHTML = feedbackHtml;
   button.disabled = true;
 
-  setTimeout(() => {
+  window.setTimeout(() => {
     button.innerHTML = originalContent;
     button.disabled = false;
-  }, 2000);
+    onComplete();
+  }, duration);
 };
 
 const onCopyButtonClick = () => {
+  if (!copyButton) {
+    return;
+  }
   const originalContent = copyButton.innerHTML;
-  const feedbackHtml = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-check"><polyline points="20 6 9 17 4 12"></polyline></svg> <span>Copied!</span>';
-  navigator.clipboard.writeText(textarea.value)
-    .then(() => showTemporaryFeedback(copyButton, originalContent, feedbackHtml))
-    .catch(err => {
-      console.error('Failed to copy text: ', err);
-    });
+  copyTextToClipboard(textarea.value)
+    .then(() => {
+      showTemporaryFeedback(
+        copyButton,
+        originalContent,
+        COPY_SUCCESS_FEEDBACK_HTML,
+      );
+    })
+    .catch(handleCopyError);
+};
+
+const onCopyBannerButtonClick = () => {
+  if (!copyBannerButton) {
+    return;
+  }
+  clearCopyBannerTimeout();
+  const originalContent = copyBannerButton.innerHTML;
+  copyTextToClipboard(textarea.value)
+    .then(() => {
+      showTemporaryFeedback(
+        copyBannerButton,
+        originalContent,
+        COPY_SUCCESS_FEEDBACK_HTML,
+        hideCopyBanner,
+        COPY_FEEDBACK_DURATIONS.banner,
+      );
+    })
+    .catch(handleCopyError);
 };
 
 const onCopyUrlButtonClick = () => {
+  if (!copyUrlButton) {
+    return;
+  }
   const originalContent = copyUrlButton.innerHTML;
   const urlToCopy = createUpdatedUrl(window.location.href, QUERY_PARAM_KEY, textarea.value);
-  const feedbackHtml = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-check"><polyline points="20 6 9 17 4 12"></polyline></svg> <span>Copied!</span>';
-
-  navigator.clipboard.writeText(urlToCopy)
-    .then(() => showTemporaryFeedback(copyUrlButton, originalContent, feedbackHtml))
-    .catch(err => {
-      console.error('Failed to copy URL: ', err);
-    });
+  copyTextToClipboard(urlToCopy)
+    .then(() => {
+      showTemporaryFeedback(
+        copyUrlButton,
+        originalContent,
+        COPY_SUCCESS_FEEDBACK_HTML,
+      );
+    })
+    .catch(handleCopyError);
 };
 
 const onGenerateQrButtonClick = () => {
@@ -179,12 +270,13 @@ const onTextareaInput = () => {
 
 // --- Initializations ---
 
-copyButton.addEventListener('click', onCopyButtonClick);
-copyUrlButton.addEventListener('click', onCopyUrlButtonClick);
-generateQrButton.addEventListener('click', onGenerateQrButtonClick);
-saveFileButton.addEventListener('click', onSaveFileButtonClick);
-closeQrButton.addEventListener('click', onCloseQrButtonClick);
-textarea.addEventListener('input', onTextareaInput);
+copyButton?.addEventListener('click', onCopyButtonClick);
+copyUrlButton?.addEventListener('click', onCopyUrlButtonClick);
+generateQrButton?.addEventListener('click', onGenerateQrButtonClick);
+saveFileButton?.addEventListener('click', onSaveFileButtonClick);
+closeQrButton?.addEventListener('click', onCloseQrButtonClick);
+textarea?.addEventListener('input', onTextareaInput);
+copyBannerButton?.addEventListener('click', onCopyBannerButtonClick);
 
 qrCodeContainer.addEventListener('dragstart', (e) => e.preventDefault());
 
@@ -197,4 +289,5 @@ window.addEventListener('beforeunload', (e) => {
 
 makeDraggable(qrCodeContainer);
 
+initializeCopyBanner();
 onTextareaInput(); // Initial check for all button states
