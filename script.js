@@ -40,10 +40,23 @@ const copyBanner = document.getElementById('copy-banner');
 const copyBannerButton = document.getElementById('copy-banner-button');
 let copyBannerTimeoutId = null;
 
+const getTextareaValue = () => {
+  return textarea?.value;
+}
+
+const updateTextareaValue = (newValue) => {
+  if (textarea && newValue !== undefined && newValue !== null) {
+    textarea.value = newValue;
+  }
+  return getTextareaValue();
+}
+
+
 // Initial load from URL parameter
 const initialText = getCurrentQueryParam(QUERY_PARAM_KEY);
 if (initialText !== null) {
-  textarea.value = decodeURIComponent(initialText);
+  const newTextAreaValue = decodeURIComponent(initialText);
+  updateTextareaValue(newTextAreaValue);
   const newUrl = createUpdatedUrl(window.location.href, QUERY_PARAM_KEY, null);
   replaceUrl(newUrl);
 }
@@ -112,8 +125,8 @@ const triggerDownload = (blob, filename) => {
   URL.revokeObjectURL(url);
 };
 
-const generateQrCode = (size) => {
-  const url = createUpdatedUrl(window.location.href, QUERY_PARAM_KEY, textarea.value);
+const generateQrCode = (size, sourceText) => {
+  const url = createUpdatedUrl(window.location.href, QUERY_PARAM_KEY, sourceText);
   qrCodeImageContainer.innerHTML = '';
   new QRCode(qrCodeImageContainer, {
     text: url,
@@ -190,7 +203,8 @@ const onCopyButtonClick = () => {
     return;
   }
   const originalContent = copyButton.innerHTML;
-  copyTextToClipboard(textarea.value)
+  const inputText = getTextareaValue();
+  inputText && copyTextToClipboard(inputText)
     .then(() => {
       showTemporaryFeedback(
         copyButton,
@@ -207,7 +221,8 @@ const onCopyBannerButtonClick = () => {
   }
   clearCopyBannerTimeout();
   const originalContent = copyBannerButton.innerHTML;
-  copyTextToClipboard(textarea.value)
+  const inputText = getTextareaValue();
+  inputText && copyTextToClipboard(inputText)
     .then(() => {
       showTemporaryFeedback(
         copyBannerButton,
@@ -225,8 +240,9 @@ const onCopyUrlButtonClick = () => {
     return;
   }
   const originalContent = copyUrlButton.innerHTML;
-  const urlToCopy = createUpdatedUrl(window.location.href, QUERY_PARAM_KEY, textarea.value);
-  copyTextToClipboard(urlToCopy)
+  const inputText = getTextareaValue();
+  const urlToCopy = inputText && createUpdatedUrl(window.location.href, QUERY_PARAM_KEY, inputText);
+  urlToCopy && copyTextToClipboard(urlToCopy)
     .then(() => {
       showTemporaryFeedback(
         copyUrlButton,
@@ -238,15 +254,16 @@ const onCopyUrlButtonClick = () => {
 };
 
 const onGenerateQrButtonClick = () => {
-  generateQrCode(256);
+  const inputText = getTextareaValue();
+  generateQrCode(256, inputText);
   qrCodeContainer.style.display = 'block';
 };
 
 const onSaveFileButtonClick = () => {
-  const text = textarea.value;
+  const inputText = getTextareaValue();
   const timestamp = createTimestamp();
   const filename = createFilename('note', timestamp, 'txt');
-  const blob = new Blob([text], { type: 'text/plain' });
+  const blob = new Blob([inputText], { type: 'text/plain' });
   triggerDownload(blob, filename);
 };
 
@@ -281,7 +298,8 @@ const updateHeaderButtonState = Object.freeze({
 });
 
 const onTextareaInput = () => {
-  const inputTextLength = textarea.value.length;
+  const inputText = getTextareaValue();
+  const inputTextLength = inputText?.length ?? 0;
   updateHeaderButtonState.copyText(inputTextLength);
   updateHeaderButtonState.copyUrl(inputTextLength);
   updateHeaderButtonState.saveFile(inputTextLength);
@@ -301,7 +319,8 @@ copyBannerButton?.addEventListener('click', onCopyBannerButtonClick);
 qrCodeContainer.addEventListener('dragstart', (e) => e.preventDefault());
 
 window.addEventListener('beforeunload', (e) => {
-  if (textarea.value) {
+  const inputText = getTextareaValue();
+  if (inputText) {
     e.preventDefault();
     e.returnValue = '';
   }
