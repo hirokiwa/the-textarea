@@ -2,6 +2,7 @@ const QUERY_PARAM_KEY = 't';
 const MAX_TEXT_LENGTH_FOR_COPY_URL_BUTTON = 2000;
 const MAX_TEXT_LENGTH_FOR_QR_CODE_BUTTON = 2000;
 const COPY_BANNER_DISPLAY_DURATION = 5000;
+const COPY_BANNER_INITIAL_DELAY = 500;
 const COPY_FEEDBACK_DURATIONS = Object.freeze({
   default: 2000,
   banner: 3000,
@@ -176,7 +177,9 @@ const initializeCopyBanner = () => {
   if (!copyBanner || !copyBannerButton || !shouldShowCopyBanner) {
     return;
   }
-  requestAnimationFrame(showCopyBanner);
+  window.setTimeout(() => {
+    showCopyBanner();
+  }, COPY_BANNER_INITIAL_DELAY);
 };
 
 // --- Event Handlers ---
