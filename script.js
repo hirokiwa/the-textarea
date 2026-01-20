@@ -300,14 +300,53 @@ const updateHeaderButtonState = Object.freeze({
   },
 });
 
-const onTextareaInput = () => {
-  const inputText = getTextareaValue();
-  const inputTextLength = inputText?.length ?? 0;
-  updateHeaderButtonState.copyText(inputTextLength);
-  updateHeaderButtonState.copyUrl(inputTextLength);
-  updateHeaderButtonState.saveFile(inputTextLength);
-  updateHeaderButtonState.qrCode(inputTextLength);
+const DEFAULT_TITLE = 'The Textarea';
+const TITLE_MAX_LENGTH = 30;
+
+const extractTitleFromText = (text) => {
+  if (!text || text.length === 0) {
+    return DEFAULT_TITLE;
+  }
+  return text
+    .replace(/^[\s　]+/, '')  // Remove all leading half-width and full-width spaces
+    .replace(/\r?\n/g, '')    // Remove all line breaks
+    .slice(0, TITLE_MAX_LENGTH);
 };
+
+const shouldUpdateTitle = (previousTitleSource, nextTitleSource) => {
+  return previousTitleSource !== nextTitleSource;
+};
+
+const applyDocumentTitle = (title) => {
+  document.title = title;
+};
+
+const createTextareaTitleSync = () => {
+  const initialText = getTextareaValue() ?? '';
+  const initialTitleSource = extractTitleFromText(initialText);
+
+  applyDocumentTitle(initialTitleSource);
+
+  let previousTitleSource = initialTitleSource;
+
+  const handleChange = () => {
+    const currentText = getTextareaValue() ?? '';
+    const nextTitleSource = extractTitleFromText(currentText);
+
+    if (!shouldUpdateTitle(previousTitleSource, nextTitleSource)) {
+      return;
+    }
+
+    applyDocumentTitle(nextTitleSource);
+    previousTitleSource = nextTitleSource;
+  };
+
+  return Object.freeze({
+    handleChange,
+  });
+};
+
+const textareaTitleSync = createTextareaTitleSync();
 
 // --- Initializations ---
 
@@ -316,7 +355,6 @@ copyUrlButton?.addEventListener('click', onCopyUrlButtonClick);
 generateQrButton?.addEventListener('click', onGenerateQrButtonClick);
 saveFileButton?.addEventListener('click', onSaveFileButtonClick);
 closeQrButton?.addEventListener('click', onCloseQrButtonClick);
-textarea?.addEventListener('input', onTextareaInput);
 copyBannerButton?.addEventListener('click', onCopyBannerButtonClick);
 
 qrCodeContainer.addEventListener('dragstart', (e) => e.preventDefault());
@@ -332,4 +370,23 @@ window.addEventListener('beforeunload', (e) => {
 makeDraggable(qrCodeContainer);
 
 initializeCopyBanner();
-onTextareaInput(); // Initial check for all button states
+
+// ここを「input」に変更してリアルタイム更新
+const onTextareaInput = () => {
+  const inputText = getTextareaValue();
+  const inputTextLength = inputText?.length ?? 0;
+
+  updateHeaderButtonState.copyText(inputTextLength);
+  updateHeaderButtonState.copyUrl(inputTextLength);
+  updateHeaderButtonState.saveFile(inputTextLength);
+  updateHeaderButtonState.qrCode(inputTextLength);
+
+  textareaTitleSync.handleChange();
+};
+
+textarea?.addEventListener('input', onTextareaInput);
+copyBannerButton?.addEventListener('click', onCopyBannerButtonClick);
+
+qrCodeContainer.addEventListener('dragstart', (e) => e.preventDefault());
+
+onTextareaInput();
