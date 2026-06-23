@@ -47,12 +47,17 @@ const gzipCodec = {
   isSupported: () => {
     return typeof CompressionStream !== 'undefined' && typeof DecompressionStream !== 'undefined';
   },
+  resetModificationTime: (bytes) => {
+    return bytes.map((byte, index) => (
+      index >= 4 && index <= 7 ? 0 : byte
+    ));
+  },
   compress: async (text) => {
     const compressedStream = new Blob([text])
       .stream()
       .pipeThrough(new CompressionStream('gzip'));
     const compressedBuffer = await new Response(compressedStream).arrayBuffer();
-    return new Uint8Array(compressedBuffer);
+    return gzipCodec.resetModificationTime(new Uint8Array(compressedBuffer));
   },
   decompress: async (base64UrlText) => {
     const compressedBytes = base64Url.decode(base64UrlText);
