@@ -17,7 +17,7 @@ const getCurrentQueryParam = (key) => {
 const createUpdatedUrl = (currentUrl, key, text) => {
   const url = new URL(currentUrl);
   if (text) {
-    url.searchParams.set(key, encodeURIComponent(text));
+    url.searchParams.set(key, text);
   } else {
     url.searchParams.delete(key);
   }
@@ -56,7 +56,7 @@ const updateTextareaValue = (newValue) => {
 // Initial load from URL parameter
 const initialText = getCurrentQueryParam(QUERY_PARAM_KEY);
 if (initialText !== null) {
-  const newTextAreaValue = decodeURIComponent(initialText);
+  const newTextAreaValue = initialText;
   updateTextareaValue(newTextAreaValue);
   const newUrl = createUpdatedUrl(window.location.href, QUERY_PARAM_KEY, null);
   replaceUrl(newUrl);
