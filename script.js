@@ -1,4 +1,6 @@
 const QUERY_PARAM_KEY = 't';
+const ENCODING_QUERY_PARAM_KEY = 'e';
+const GZIP_ENCODING_VALUE = 'g';
 const MAX_TEXT_LENGTH_FOR_COPY_URL_BUTTON = 2000;
 const MAX_TEXT_LENGTH_FOR_QR_CODE_BUTTON = 2000;
 const COPY_BANNER_DISPLAY_DURATION = 5000;
@@ -14,13 +16,128 @@ const getCurrentQueryParam = (key) => {
   return urlParams.get(key);
 };
 
-const createUpdatedUrl = (currentUrl, key, text) => {
-  const url = new URL(currentUrl);
-  if (text) {
-    url.searchParams.set(key, text);
-  } else {
+const createBinaryStringFromBytes = (bytes) => {
+  return Array.from(bytes)
+    .map((byte) => String.fromCharCode(byte))
+    .join('');
+};
+
+const createBytesFromBinaryString = (binaryString) => {
+  return Uint8Array.from(binaryString, (character) => character.charCodeAt(0));
+};
+
+const base64Url = {
+  encode: (bytes) => {
+    return btoa(createBinaryStringFromBytes(bytes))
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '');
+  },
+  decode: (base64UrlText) => {
+    const paddingLength = (4 - (base64UrlText.length % 4)) % 4;
+    const padding = '='.repeat(paddingLength);
+    const base64Text = `${base64UrlText}${padding}`
+      .replace(/-/g, '+')
+      .replace(/_/g, '/');
+    return createBytesFromBinaryString(atob(base64Text));
+  },
+};
+
+const gzipCodec = {
+  isSupported: () => {
+    return typeof CompressionStream !== 'undefined' && typeof DecompressionStream !== 'undefined';
+  },
+  compress: async (text) => {
+    const compressedStream = new Blob([text])
+      .stream()
+      .pipeThrough(new CompressionStream('gzip'));
+    const compressedBuffer = await new Response(compressedStream).arrayBuffer();
+    return new Uint8Array(compressedBuffer);
+  },
+  decompress: async (base64UrlText) => {
+    const compressedBytes = base64Url.decode(base64UrlText);
+    const decompressedStream = new Blob([compressedBytes])
+      .stream()
+      .pipeThrough(new DecompressionStream('gzip'));
+    return new Response(decompressedStream).text();
+  },
+};
+
+const textParameter = {
+  createPlain: (text) => {
+    return {
+      encoding: null,
+      text,
+    };
+  },
+  createGzip: (text) => {
+    return {
+      encoding: GZIP_ENCODING_VALUE,
+      text,
+    };
+  },
+  isCompressedShorter: (compressedText, originalText) => {
+    return compressedText.length < encodeURIComponent(originalText).length;
+  },
+  create: async (text) => {
+    if (!gzipCodec.isSupported()) {
+      return textParameter.createPlain(text);
+    }
+
+    const compressedBytes = await gzipCodec.compress(text).catch(() => null);
+    if (!compressedBytes) {
+      return textParameter.createPlain(text);
+    }
+
+    const compressedText = base64Url.encode(compressedBytes);
+    return textParameter.isCompressedShorter(compressedText, text)
+      ? textParameter.createGzip(compressedText)
+      : textParameter.createPlain(text);
+  },
+  decode: async (parameter) => {
+    if (parameter.encoding !== GZIP_ENCODING_VALUE) {
+      return parameter.text;
+    }
+    return gzipCodec.decompress(parameter.text);
+  },
+  fromUrl: (key) => {
+    const text = getCurrentQueryParam(key);
+    if (text === null) {
+      return null;
+    }
+
+    return {
+      encoding: getCurrentQueryParam(ENCODING_QUERY_PARAM_KEY),
+      text,
+    };
+  },
+};
+
+const urlTextParameter = {
+  remove: (url, key) => {
     url.searchParams.delete(key);
-  }
+    url.searchParams.delete(ENCODING_QUERY_PARAM_KEY);
+  },
+  apply: (url, key, parameter) => {
+    if (parameter.encoding) {
+      url.searchParams.set(ENCODING_QUERY_PARAM_KEY, parameter.encoding);
+    }
+    url.searchParams.set(key, parameter.text);
+  },
+  update: async (url, key, text) => {
+    urlTextParameter.remove(url, key);
+
+    if (!text) {
+      return url;
+    }
+
+    urlTextParameter.apply(url, key, await textParameter.create(text));
+    return url;
+  },
+};
+
+const createUpdatedUrl = async (currentUrl, key, text) => {
+  const url = await urlTextParameter.update(new URL(currentUrl), key, text);
   return url.toString();
 };
 
@@ -53,15 +170,18 @@ const updateTextareaValue = (newValue) => {
 }
 
 
-// Initial load from URL parameter
-const initialText = getCurrentQueryParam(QUERY_PARAM_KEY);
-if (initialText !== null) {
-  const newTextAreaValue = initialText;
+const restoreTextareaValueFromUrl = async () => {
+  const parameter = textParameter.fromUrl(QUERY_PARAM_KEY);
+  if (!parameter) {
+    return false;
+  }
+
+  const newTextAreaValue = await textParameter.decode(parameter);
   updateTextareaValue(newTextAreaValue);
-  const newUrl = createUpdatedUrl(window.location.href, QUERY_PARAM_KEY, null);
+  const newUrl = await createUpdatedUrl(window.location.href, QUERY_PARAM_KEY, null);
   replaceUrl(newUrl);
-}
-const shouldShowCopyBanner = initialText !== null;
+  return true;
+};
 
 // --- Logic --- 
 
@@ -126,8 +246,8 @@ const triggerDownload = (blob, filename) => {
   URL.revokeObjectURL(url);
 };
 
-const generateQrCode = (size, sourceText) => {
-  const url = createUpdatedUrl(window.location.href, QUERY_PARAM_KEY, sourceText);
+const generateQrCode = async (size, sourceText) => {
+  const url = await createUpdatedUrl(window.location.href, QUERY_PARAM_KEY, sourceText);
   qrCodeImageContainer.innerHTML = '';
   new QRCode(qrCodeImageContainer, {
     text: url,
@@ -173,7 +293,7 @@ const showCopyBanner = () => {
   }, COPY_BANNER_DISPLAY_DURATION);
 };
 
-const initializeCopyBanner = () => {
+const initializeCopyBanner = (shouldShowCopyBanner) => {
   if (!copyBanner || !copyBannerButton || !shouldShowCopyBanner) {
     return;
   }
@@ -244,8 +364,8 @@ const onCopyUrlButtonClick = () => {
   }
   const originalContent = copyUrlButton.innerHTML;
   const inputText = getTextareaValue();
-  const urlToCopy = inputText && createUpdatedUrl(window.location.href, QUERY_PARAM_KEY, inputText);
-  urlToCopy && copyTextToClipboard(urlToCopy)
+  inputText && createUpdatedUrl(window.location.href, QUERY_PARAM_KEY, inputText)
+    .then(copyTextToClipboard)
     .then(() => {
       showTemporaryFeedback(
         copyUrlButton,
@@ -258,8 +378,11 @@ const onCopyUrlButtonClick = () => {
 
 const onGenerateQrButtonClick = () => {
   const inputText = getTextareaValue();
-  generateQrCode(256, inputText);
-  qrCodeContainer.style.display = 'block';
+  inputText && generateQrCode(256, inputText)
+    .then(() => {
+      qrCodeContainer.style.display = 'block';
+    })
+    .catch(handleCopyError);
 };
 
 const onSaveFileButtonClick = () => {
@@ -369,8 +492,6 @@ window.addEventListener('beforeunload', (e) => {
 
 makeDraggable(qrCodeContainer);
 
-initializeCopyBanner();
-
 // ここを「input」に変更してリアルタイム更新
 const onTextareaInput = () => {
   const inputText = getTextareaValue();
@@ -389,4 +510,10 @@ copyBannerButton?.addEventListener('click', onCopyBannerButtonClick);
 
 qrCodeContainer.addEventListener('dragstart', (e) => e.preventDefault());
 
-onTextareaInput();
+const initializeApplication = async () => {
+  const shouldShowCopyBanner = await restoreTextareaValueFromUrl();
+  onTextareaInput();
+  initializeCopyBanner(shouldShowCopyBanner);
+};
+
+initializeApplication().catch(handleCopyError);
