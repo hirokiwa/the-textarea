@@ -16,6 +16,11 @@ const getCurrentQueryParam = (key) => {
   return urlParams.get(key);
 };
 
+const getCurrentTextFragment = () => {
+  const fragment = window.location.hash.slice(1);
+  return fragment ? decodeURIComponent(fragment) : null;
+};
+
 const createBinaryStringFromBytes = (bytes) => {
   return Array.from(bytes)
     .map((byte) => String.fromCharCode(byte))
@@ -106,7 +111,7 @@ const textParameter = {
     return gzipCodec.decompress(parameter.text);
   },
   fromUrl: (key) => {
-    const text = getCurrentQueryParam(key);
+    const text = getCurrentTextFragment();
     if (text === null) {
       return null;
     }
@@ -122,12 +127,13 @@ const urlTextParameter = {
   remove: (url, key) => {
     url.searchParams.delete(key);
     url.searchParams.delete(ENCODING_QUERY_PARAM_KEY);
+    url.hash = '';
   },
   apply: (url, key, parameter) => {
     if (parameter.encoding) {
       url.searchParams.set(ENCODING_QUERY_PARAM_KEY, parameter.encoding);
     }
-    url.searchParams.set(key, parameter.text);
+    url.hash = encodeURIComponent(parameter.text);
   },
   update: async (url, key, text) => {
     urlTextParameter.remove(url, key);
