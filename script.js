@@ -1,6 +1,8 @@
 const QUERY_PARAM_KEY = 't';
 const ENCODING_QUERY_PARAM_KEY = 'e';
 const GZIP_ENCODING_VALUE = 'g';
+const MODE_QUERY_PARAM_KEY = 'm';
+const PREVIEW_MODE_VALUE = 'p';
 const MAX_TEXT_LENGTH_FOR_COPY_URL_BUTTON = 10000;
 const MAX_TEXT_LENGTH_FOR_QR_CODE_BUTTON = 2000;
 const COPY_BANNER_DISPLAY_DURATION = 5000;
@@ -10,6 +12,8 @@ const COPY_FEEDBACK_DURATIONS = Object.freeze({
   banner: 3000,
 });
 const COPY_SUCCESS_FEEDBACK_HTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-check"><polyline points="20 6 9 17 4 12"></polyline></svg> <span>Copied!</span>';
+const PREVIEW_BUTTON_HTML = '<svg class="icon-markdown" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="2 4 21 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 17V7l4.5 5L13 7v10"></path><path d="M18 6v10"></path><path d="m14.5 12.5 3.5 3.5 3.5-3.5"></path></svg><span>Preview</span>';
+const EDIT_BUTTON_HTML = '<svg class="icon-edit" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.375 2.625a1 1 0 0 1 3 3l-9.013 9.014a2 2 0 0 1-.853.505l-2.873.84a.5.5 0 0 1-.62-.62l.84-2.873a2 2 0 0 1 .506-.852z"></path></svg><span>Edit</span>';
 
 const getCurrentQueryParam = (key) => {
   const urlParams = new URLSearchParams(window.location.search);
@@ -156,18 +160,41 @@ const replaceUrl = (newUrl) => {
   window.history.replaceState(null, '', newUrl);
 };
 
+const getPreviewModeFromUrl = () => {
+  return getCurrentQueryParam(MODE_QUERY_PARAM_KEY) === PREVIEW_MODE_VALUE;
+};
+
+const createUrlWithPreviewMode = (currentUrl, shouldUsePreviewMode) => {
+  const url = new URL(currentUrl);
+
+  if (shouldUsePreviewMode) {
+    url.searchParams.set(MODE_QUERY_PARAM_KEY, PREVIEW_MODE_VALUE);
+    return url.toString();
+  }
+
+  url.searchParams.delete(MODE_QUERY_PARAM_KEY);
+  return url.toString();
+};
+
+const replaceUrlPreviewMode = (shouldUsePreviewMode) => {
+  replaceUrl(createUrlWithPreviewMode(window.location.href, shouldUsePreviewMode));
+};
+
 // Element selectors
 const textarea = document.getElementById('main-textarea');
 const copyButton = document.getElementById('copy-button');
 const copyUrlButton = document.getElementById('copy-url-button');
 const generateQrButton = document.getElementById('generate-qr-button');
 const saveFileButton = document.getElementById('save-file-button');
+const previewToggleButton = document.getElementById('preview-toggle-button');
+const markdownPreview = document.getElementById('markdown-preview');
 const qrCodeContainer = document.getElementById('qr-code-container');
 const qrCodeImageContainer = document.getElementById('qr-code-image');
 const closeQrButton = document.getElementById('close-qr-button');
 const copyBanner = document.getElementById('copy-banner');
 const copyBannerButton = document.getElementById('copy-banner-button');
 let copyBannerTimeoutId = null;
+let isPreviewMode = false;
 
 const getTextareaValue = () => {
   return textarea?.value;
@@ -179,6 +206,59 @@ const updateTextareaValue = (newValue) => {
   }
   return getTextareaValue();
 }
+
+const escapeHtml = (text) => {
+  const fragment = document.createElement('div');
+  fragment.textContent = text;
+  return fragment.innerHTML;
+};
+
+const renderMarkdownToHtml = (markdownText) => {
+  if (!markdownText) {
+    return '';
+  }
+
+  if (!window.marked || !window.DOMPurify) {
+    return `<pre><code>${escapeHtml(markdownText)}</code></pre>`;
+  }
+
+  const rawHtml = window.marked.parse(markdownText, {
+    breaks: true,
+    gfm: true,
+  });
+  return window.DOMPurify.sanitize(rawHtml, {
+    USE_PROFILES: { html: true },
+  });
+};
+
+const updateMarkdownPreview = () => {
+  if (!markdownPreview) {
+    return;
+  }
+  markdownPreview.innerHTML = renderMarkdownToHtml(getTextareaValue() ?? '');
+};
+
+const setPreviewMode = (nextIsPreviewMode) => {
+  if (!textarea || !markdownPreview || !previewToggleButton) {
+    return;
+  }
+
+  isPreviewMode = nextIsPreviewMode;
+  replaceUrlPreviewMode(isPreviewMode);
+  textarea.hidden = isPreviewMode;
+  markdownPreview.hidden = !isPreviewMode;
+  previewToggleButton.innerHTML = isPreviewMode ? EDIT_BUTTON_HTML : PREVIEW_BUTTON_HTML;
+  previewToggleButton.setAttribute('aria-pressed', String(isPreviewMode));
+  previewToggleButton.setAttribute('aria-label', isPreviewMode ? 'Edit Markdown' : 'Preview Markdown');
+
+  if (isPreviewMode) {
+    updateMarkdownPreview();
+    markdownPreview.focus();
+    return;
+  }
+
+  textarea.focus();
+};
 
 
 const restoreTextareaValueFromUrl = async () => {
@@ -399,9 +479,14 @@ const onGenerateQrButtonClick = () => {
 const onSaveFileButtonClick = () => {
   const inputText = getTextareaValue();
   const timestamp = createTimestamp();
-  const filename = createFilename('note', timestamp, 'txt');
+  const extension = isPreviewMode ? 'md' : 'txt';
+  const filename = createFilename('note', timestamp, extension);
   const blob = new Blob([inputText], { type: 'text/plain' });
   triggerDownload(blob, filename);
+};
+
+const onPreviewToggleButtonClick = () => {
+  setPreviewMode(!isPreviewMode);
 };
 
 const onCloseQrButtonClick = () => {
@@ -427,6 +512,10 @@ const updateHeaderButtonState = Object.freeze({
   saveFile: (inputTextLength) => {
     const isLengthValid = inputTextLength > 0;
     setButtonDisabledState(saveFileButton, !isLengthValid);
+  },
+  preview: (inputTextLength) => {
+    const isLengthValid = inputTextLength > 0;
+    setButtonDisabledState(previewToggleButton, !isLengthValid);
   },
   qrCode: (inputTextLength) => {
     const isLengthValid = inputTextLength > 0 && inputTextLength <= MAX_TEXT_LENGTH_FOR_QR_CODE_BUTTON;
@@ -488,6 +577,7 @@ copyButton?.addEventListener('click', onCopyButtonClick);
 copyUrlButton?.addEventListener('click', onCopyUrlButtonClick);
 generateQrButton?.addEventListener('click', onGenerateQrButtonClick);
 saveFileButton?.addEventListener('click', onSaveFileButtonClick);
+previewToggleButton?.addEventListener('click', onPreviewToggleButtonClick);
 closeQrButton?.addEventListener('click', onCloseQrButtonClick);
 copyBannerButton?.addEventListener('click', onCopyBannerButtonClick);
 
@@ -511,9 +601,14 @@ const onTextareaInput = () => {
   updateHeaderButtonState.copyText(inputTextLength);
   updateHeaderButtonState.copyUrl(inputTextLength);
   updateHeaderButtonState.saveFile(inputTextLength);
+  updateHeaderButtonState.preview(inputTextLength);
   updateHeaderButtonState.qrCode(inputTextLength);
 
   textareaTitleSync.handleChange();
+
+  if (isPreviewMode) {
+    updateMarkdownPreview();
+  }
 };
 
 textarea?.addEventListener('input', onTextareaInput);
@@ -524,6 +619,8 @@ qrCodeContainer.addEventListener('dragstart', (e) => e.preventDefault());
 const initializeApplication = async () => {
   const shouldShowCopyBanner = await restoreTextareaValueFromUrl();
   onTextareaInput();
+  const inputTextLength = getTextareaValue()?.length ?? 0;
+  setPreviewMode(getPreviewModeFromUrl() && inputTextLength > 0);
   initializeCopyBanner(shouldShowCopyBanner);
 };
 

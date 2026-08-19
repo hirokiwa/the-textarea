@@ -43,10 +43,15 @@
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-download"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
       <span>Save File</span>
     </button>
+    <button id="preview-toggle-button" class="control-bar__button" aria-label="Preview Markdown" aria-pressed="false">
+      <svg class="icon-markdown" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="2 4 21 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 17V7l4.5 5L13 7v10"></path><path d="M18 6v10"></path><path d="m14.5 12.5 3.5 3.5 3.5-3.5"></path></svg>
+      <span>Preview</span>
+    </button>
   </header>
   <main class="textarea-app__container">
     <label for="main-textarea" class="textarea-app__label textarea-app__label--visually-hidden">Text input area</label>
     <textarea autofocus id="main-textarea" class="textarea-app__input" aria-label="Text input area"></textarea>
+    <article id="markdown-preview" class="markdown-preview" aria-label="Markdown preview" tabindex="0" hidden></article>
   </main>
 
   <div id="copy-banner" class="copy-banner" aria-hidden="true">
@@ -62,6 +67,8 @@
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked@15.0.7/marked.min.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
